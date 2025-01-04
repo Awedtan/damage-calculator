@@ -1,0 +1,16 @@
+{
+    "base": {},
+    "talent": {},
+    "down": {
+        "hitNum": {
+            "value": 2,
+            "type": "number",
+            "modifier": "set"
+        }
+    },
+    "skill": [
+        {},
+        {}
+    ],
+    "up": {}
+}

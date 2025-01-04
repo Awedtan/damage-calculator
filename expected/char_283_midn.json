@@ -1,0 +1,26 @@
+{
+    "downNumbers": {
+        "atk": 569,
+        "dmgType": 0,
+        "aspd": 0.769,
+        "hitNum": 1,
+        "spHit": 0,
+        "spRate": 0,
+        "hitDmg": 637.28,
+        "dps": 490.215
+    },
+    "upNumbersArr": [
+        {
+            "atk": 768.15,
+            "dmgType": 1,
+            "aspd": 0.769,
+            "hitNum": 1,
+            "spHit": 0,
+            "spRate": 0,
+            "hitDmg": 860.328,
+            "dps": 661.791,
+            "uptime": 0.364,
+            "avgDps": 552.606
+        }
+    ]
+}

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>dmgcalc</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <input type="text" id="input" placeholder="">
+    <button onclick="buttonClick()">Submit</button>
+    <div>
+        <canvas id="defchart"></canvas>
+    </div>
+    <div>
+        <canvas id="reschart"></canvas>
+    </div>
+    <div>
+        <canvas id="bothchart"></canvas>
+    </div>
+
+    <script>
+        let chartNames = ['defchart', 'reschart', 'bothchart'];
+        let chartInstances = [null, null, null];
+
+        async function buttonClick() {
+            const maxDef = 1500;
+            const defInc = 150
+            const op = document.getElementById('input').value;
+
+            const dpsArr = await fetch(`http://localhost:3000/operator/${op}`)
+                .then(response => response.json())
+                .then(data => data);
+
+            console.log(dpsArr);
+
+            for(let i=0; i<chartInstances.length;i++){
+                const dataArr = dpsArr[i];
+
+                const datasets = [{
+                    label: 'Down',
+                    data: dataArr.map(data => data.dps.downNumbers.dps),
+                    borderWidth: 1,
+                    fill: false
+                }];
+                for(let i=0; i<dataArr[0].dps.upNumbersArr.length; i++){
+                    datasets.push({
+                        label: `${i+1}`,
+                        data: dataArr.map(data => data.dps.upNumbersArr[i].dps),
+                        borderWidth: 1,
+                        fill: false
+                    });
+                }
+
+                if (chartInstances[i]) chartInstances[i].destroy();
+
+                let labels;
+                if(i==0){
+                    labels = dataArr.map(data => data.def);
+                }
+                else if(i==1){
+                    labels = dataArr.map(data => data.res);
+                }
+                else{
+                    labels = dataArr.map(data => `${data.def} / ${data.res}`);
+                }
+
+                chartInstances[i] = new Chart(document.getElementById(chartNames[i]), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+                chartInstances[i].resize(1000, 500);
+            };
+        }
+    </script>
+</body>
+
+</html>
