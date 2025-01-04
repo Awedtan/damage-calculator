@@ -1,22 +1,19 @@
 import 'dotenv/config';
 import express from 'express';
 import * as T from 'hella-types';
-import { loadArchetypeModifiers, loadOperatorModifiers, testExpectedValues, writeExpectedValues } from './utils';
 import getDps from './getDps';
+import { testExpectedValues, writeExpectedValues } from './utils';
 const cors = require('cors');
 
 async function main() {
-    loadArchetypeModifiers();
-    loadOperatorModifiers();
-
     const args = process.argv.slice(2);
     if (args.length > 0) {
         if (args[0] === 'test') {
-            testExpectedValues();
+            testExpectedValues(args[1] && args[1] == 'v');
             return;
         }
         else if (args[0] === 'write') {
-            writeExpectedValues();
+            writeExpectedValues(args[1] && args[1] == 'v');
             return;
         }
     }

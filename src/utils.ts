@@ -1,61 +1,53 @@
 import * as fs from 'fs';
 import * as T from 'hella-types';
+import path from 'path';
 import getDps from "./getDps";
-import { OperatorModifiers } from "./types";
 
-export const archetypeModifiers: { [key: string]: OperatorModifiers } = {};
-export const operatorModifiers: { [key: string]: OperatorModifiers } = {};
+export async function testExpectedValues(verbose: boolean) {
+    const expectedDirectory = path.join(__dirname, '../operators');
+    const expectedFiles = fs.readdirSync(expectedDirectory)
+        .filter(dir => fs.statSync(path.join(expectedDirectory, dir)).isDirectory())
+        .filter(dir => fs.existsSync(path.join(expectedDirectory, dir, 'expected.json')))
+        .map(dir => ({ name: dir, file: path.join(expectedDirectory, dir, 'expected.json') }));
 
-export function loadArchetypeModifiers() {
-    const directory = './modifiers/archetypes';
-    const files = fs.readdirSync(directory);
-    for (const file of files) {
-        const archId = file.split('.')[0];
-        archetypeModifiers[archId] = JSON.parse(fs.readFileSync(`${directory}/${file}`).toString());
-    }
-}
-
-export function loadOperatorModifiers() {
-    const directory = './modifiers/operators';
-    const files = fs.readdirSync(directory);
-    for (const file of files) {
-        const opId = file.split('.')[0];
-        operatorModifiers[opId] = JSON.parse(fs.readFileSync(`${directory}/${file}`).toString());
-    }
-}
-
-export async function testExpectedValues() {
-    const expectedDirectory = './expected';
-    const expectedFiles = fs.readdirSync(expectedDirectory);
-    for (const file of expectedFiles) {
-        const expected = require(`.${expectedDirectory}/${file}`);
+    for (const { name, file } of expectedFiles) {
+        const expected = require(file);
         const actual = getDps(
-            (await (await fetch(`https://awedtan.ca/api/operator/${file.split('.')[0]}`)).json() as any).value as T.Operator,
+            (await (await fetch(`https://awedtan.ca/api/operator/${name.split('.')[0]}`)).json() as any).value as T.Operator,
             0, 0);
         if (JSON.stringify(actual) === JSON.stringify(expected)) {
-            console.log(`${file.split('.')[0]} check passed`);
+            if (verbose)
+                console.log(`${name.split('.')[0]} test passed`);
         }
         else {
-            console.log(`${file.split('.')[0]} check failed`);
-            console.log(JSON.stringify(actual));
+            console.log(`${name.split('.')[0]} test failed`);
+            if (verbose)
+                console.log(JSON.stringify(actual));
         }
     }
 }
 
-export async function writeExpectedValues() {
-    const expectedDirectory = './expected';
-    const expectedFiles = fs.readdirSync(expectedDirectory);
-    for (const file of expectedFiles) {
-        const expected = require(`.${expectedDirectory}/${file}`);
+export async function writeExpectedValues(verbose: boolean) {
+    const expectedDirectory = path.join(__dirname, '../operators');
+    const expectedFiles = fs.readdirSync(expectedDirectory)
+        .filter(dir => fs.statSync(path.join(expectedDirectory, dir)).isDirectory())
+        .filter(dir => fs.existsSync(path.join(expectedDirectory, dir, 'expected.json')))
+        .map(dir => ({ name: dir, file: path.join(expectedDirectory, dir, 'expected.json') }));
+
+    for (const { name, file } of expectedFiles) {
+        const expected = require(file);
         const actual = getDps(
-            (await (await fetch(`https://awedtan.ca/api/operator/${file.split('.')[0]}`)).json() as any).value as T.Operator,
+            (await (await fetch(`https://awedtan.ca/api/operator/${name.split('.')[0]}`)).json() as any).value as T.Operator,
             0, 0);
         if (JSON.stringify(actual) === JSON.stringify(expected)) {
-            console.log(`${file.split('.')[0]} check passed`);
+            if (verbose)
+                console.log(`${name.split('.')[0]} test passed`);
         }
         else {
-            console.log(`${file.split('.')[0]} check failed, overwritten`);
-            fs.writeFileSync(`./expected/${file}`, JSON.stringify(actual));
+            console.log(`${file.split('.')[0]} test failed, overwritten`);
+            if (verbose)
+                console.log(JSON.stringify(actual));
+            fs.writeFileSync(file, JSON.stringify(actual));
         }
     }
 }

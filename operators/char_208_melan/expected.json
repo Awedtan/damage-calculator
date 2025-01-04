@@ -15,6 +15,7 @@
             "dmgType": 0,
             "aspd": 0.667,
             "hitNum": 1,
+            "spType": "INCREASE_WITH_TIME",
             "spHit": 0,
             "spRate": 0,
             "hitDmg": 1308.24,

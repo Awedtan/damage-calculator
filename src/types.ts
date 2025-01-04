@@ -2,6 +2,10 @@ export const DMG_PHYSICAL = 0;
 export const DMG_ARTS = 1;
 export const DMG_TRUE = 2;
 
+export const SP_ATTACK = 'INCREASE_WHEN_ATTACK';
+export const SP_HURT = 'INCREASE_WHEN_TAKEN_DAMAGE';
+export const SP_TIME = 'INCREASE_WITH_TIME';
+
 export const PROF_DMG_TYPES = {
     PIONEER: DMG_PHYSICAL,
     WARRIOR: DMG_PHYSICAL,
@@ -13,7 +17,7 @@ export const PROF_DMG_TYPES = {
     MEDIC: DMG_ARTS
 }
 
-export type Numbers = {
+export type StatNumbers = {
     atk?: number
     atkPercent?: number
     atkInterval?: number
@@ -30,36 +34,11 @@ export type DamageNumbers = {
     aspd?: number
     dmgType?: number
     hitNum?: number
+    spType?: string
     spHit?: number
     spRate?: number
     hitDmg?: number
     dps?: number
     uptime?: number
     avgDps?: number
-}
-
-type NumberModifier = {
-    value: number,
-    type: 'number' | 'percent',
-    modifier: 'set' | 'add' | 'sub' | 'mul' | 'div' | 'min' | 'max'
-}
-
-export type NumbersModifiers = {
-    atk?: NumberModifier
-    atkPercent?: NumberModifier
-    atkInterval?: NumberModifier
-    atkScale?: NumberModifier
-    aspd?: NumberModifier
-    dmgType?: NumberModifier
-    hitNum?: NumberModifier
-    sp?: NumberModifier
-    spRate?: NumberModifier
-}
-
-export type OperatorModifiers = {
-    base: NumbersModifiers
-    talent: NumbersModifiers
-    down: NumbersModifiers
-    skill: NumbersModifiers[]
-    up: NumbersModifiers
 }
