@@ -1,3 +1,18 @@
+export const DMG_PHYSICAL = 0;
+export const DMG_ARTS = 1;
+export const DMG_TRUE = 2;
+
+export const PROF_DMG_TYPES = {
+    PIONEER: DMG_PHYSICAL,
+    WARRIOR: DMG_PHYSICAL,
+    TANK: DMG_PHYSICAL,
+    SNIPER: DMG_PHYSICAL,
+    SPECIAL: DMG_PHYSICAL,
+    CASTER: DMG_ARTS,
+    SUPPORT: DMG_ARTS,
+    MEDIC: DMG_ARTS
+}
+
 export type Numbers = {
     atk?: number
     atkPercent?: number

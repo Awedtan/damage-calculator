@@ -1,9 +1,7 @@
 import * as T from 'hella-types';
 import { calcArtsDmg, calcPhysDmg, calcTotalAspd, calcTotalAtk, calcTotalSpHit, calcTotalSpRate } from "./calc";
-import { DMG_TYPES, DMG_ARTS, DMG_PHYSICAL, DMG_TRUE } from "./consts";
-import { archetypeModifiers, operatorModifiers } from "./dynamics";
-import { DamageNumbers, Numbers, NumbersModifiers, OperatorModifiers } from "./types";
-import { getBlackboardValues } from "./utils";
+import { archetypeModifiers, operatorModifiers } from "./utils";
+import { DamageNumbers, DMG_ARTS, DMG_PHYSICAL, DMG_TRUE, Numbers, NumbersModifiers, OperatorModifiers, PROF_DMG_TYPES } from "./types";
 
 export default function getDps(op: T.Operator, def: number, res: number) {
     const archModifiers = archetypeModifiers[op.data.subProfessionId] ?? { base: {}, talent: {}, down: {}, skill: [], up: {} };
@@ -138,6 +136,10 @@ function collectSkillNumbers(op: T.Operator, i: number, archModifiers: OperatorM
     return skillNumbers;
 }
 
+// todo
+function collectModuleNumbers() {
+}
+
 function collectUpNumbers(op: T.Operator, i: number, archModifiers: OperatorModifiers, opModifiers: OperatorModifiers, baseNumbers: Numbers, talentNumbers: Numbers, skillNumbers: Numbers, def: number, res: number): DamageNumbers {
     const upNumbers: DamageNumbers = {};
     upNumbers.atk = calcTotalAtk([baseNumbers, talentNumbers, skillNumbers]);
@@ -168,7 +170,7 @@ function getDamageType(op: T.Operator, skill?: T.Skill) {
             return DMG_TRUE;
         }
     }
-    return DMG_TYPES[op.data.profession];
+    return PROF_DMG_TYPES[op.data.profession];
 }
 
 function applyModifiers(numbers: Numbers, modifiersArr: NumbersModifiers[]): void {
@@ -200,4 +202,12 @@ function applyModifiers(numbers: Numbers, modifiersArr: NumbersModifiers[]): voi
             }
         }
     }
+}
+
+function getBlackboardValues(blackboard: T.Blackboard[]) {
+    const blackboardValues: { [key: string]: number } = {};
+    for (const variable of blackboard) {
+        blackboardValues[variable.key] = variable.value;
+    }
+    return blackboardValues;
 }

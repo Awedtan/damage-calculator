@@ -1,14 +1,13 @@
-import * as T from 'hella-types';
-import { loadArchetypeModifiers, loadOperatorModifiers, testExpectedValues, writeExpectedValues } from './dynamics';
-import getDps from './getDps';
-import express from 'express';
 import 'dotenv/config';
+import express from 'express';
+import * as T from 'hella-types';
+import { loadArchetypeModifiers, loadOperatorModifiers, testExpectedValues, writeExpectedValues } from './utils';
+import getDps from './getDps';
 const cors = require('cors');
 
 async function main() {
     loadArchetypeModifiers();
     loadOperatorModifiers();
-
 
     const args = process.argv.slice(2);
     if (args.length > 0) {
@@ -25,24 +24,28 @@ async function main() {
     const app = express();
     app.use(cors());
     app.get('/operator/:op', async (request, response) => {
-        const def = request.query.def ? parseInt(request.query.def) : 1500;
-        const res = request.query.res ? parseInt(request.query.res) : 150;
-        const qty = request.query.ticks ? parseInt(request.query.qty) : 15;
-        const opReq = await fetch(`https://awedtan.ca/api/operator/${request.params.op}?exclude=paradox`);
+        const def = Math.min(10000, request.query.def ? parseInt(request.query.def) : 2800);
+        const res = Math.min(500, request.query.res ? parseInt(request.query.res) : 140);
+        const ticks = Math.min(50, request.query.ticks ? parseInt(request.query.ticks) : 15) - 1;
+        let opReq = null;
+        try {
+            opReq = await fetch(`https://awedtan.ca/api/operator/${request.params.op}?exclude=paradox`);
+        } catch (e) {
+            console.error(e);
+            response.status(404).send('Operator not found');
+        }
 
-        if (opReq.ok) {
+        if (opReq && opReq.ok) {
             const op = (await opReq.json() as any).value as T.Operator;
-            const defInc = def / qty;
-            const resInc = res / qty;
+            const defInc = def / ticks;
+            const resInc = res / ticks;
             const dpsArr = [[], [], []];
-            for (let i = 0; i <= qty; i++) {
-
+            for (let i = 0; i <= ticks; i++) {
                 const def = defInc * i;
                 const res = resInc * i;
-
-                dpsArr[0].push({ def, res: 0, dps: getDps(op, defInc * i, 0) });
-                dpsArr[1].push({ def: 0, res, dps: getDps(op, 0, resInc * i) });
-                dpsArr[2].push({ def, res, dps: getDps(op, defInc * i, resInc * i) });
+                dpsArr[0].push({ def: def, res: 0, dps: getDps(op, def, 0) });
+                dpsArr[1].push({ def: 0, res: res, dps: getDps(op, 0, res) });
+                dpsArr[2].push({ def: def, res: res, dps: getDps(op, def, res) });
             }
             response.status(200).send(dpsArr);
         }
