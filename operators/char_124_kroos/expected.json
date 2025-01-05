@@ -1,5 +1,5 @@
-{
-    "downNumbers": {
+[
+    {
         "atk": 446,
         "dmgType": 0,
         "aspd": 1,
@@ -9,19 +9,17 @@
         "hitDmg": 499.52,
         "dps": 499.52
     },
-    "upNumbersArr": [
-        {
-            "atk": 446,
-            "dmgType": 0,
-            "aspd": 1,
-            "hitNum": 2,
-            "spType": "INCREASE_WHEN_ATTACK",
-            "spHit": 1,
-            "spRate": 1,
-            "hitDmg": 677.92,
-            "dps": 1355.84,
-            "uptime": 0.2,
-            "avgDps": 670.784
-        }
-    ]
-}
+    {
+        "atk": 446,
+        "dmgType": 0,
+        "aspd": 1,
+        "hitNum": 2,
+        "spType": "INCREASE_WHEN_ATTACK",
+        "spHit": 1,
+        "spRate": 1,
+        "hitDmg": 677.92,
+        "dps": 1355.84,
+        "uptime": 0.2,
+        "avgDps": 670.784
+    }
+]

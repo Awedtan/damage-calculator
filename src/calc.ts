@@ -31,7 +31,7 @@ export function calcTotalAspd(numbers: StatNumbers[]): number {
 export function calcTotalSpHit(numbers: StatNumbers[], spType: string = ''): number {
     let spHit = numbers.reduce((acc, curr) => acc + (curr.sp ?? 0), 0);
     if (spType === SP_ATTACK)
-        spHit++;
+        spHit += 1;
     return spHit;
 }
 

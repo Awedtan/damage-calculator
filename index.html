@@ -36,24 +36,24 @@
             const defInc = 150;
             const op = document.getElementById('input').value;
 
-            const dpsArr = await fetch(`http://localhost:3000/operator/${op}`)
+            const dataArr = await fetch(`http://localhost:3000/operator/${op}`)
                 .then(response => response.json())
                 .then(data => data);
 
-            console.log(dpsArr);
+            console.log(dataArr);
 
             for (let i = 0; i < chartInstances.length; i++) {
-                const dataArr = dpsArr[i];
+                const dpsArr = dataArr[i];
                 const datasets = [{
                     label: 'Down',
-                    data: dataArr.map(data => data.dps.downNumbers.dps),
+                    data: dpsArr.map(data => data.dps[0].dps),
                     borderWidth: 1,
                     fill: false
                 }];
-                for (let i = 0; i < dataArr[0].dps.upNumbersArr.length; i++) {
+                for (let i = 1; i < dpsArr[0].dps.length; i++) {
                     datasets.push({
-                        label: `Skill ${i + 1}`,
-                        data: dataArr.map(data => data.dps.upNumbersArr[i].dps),
+                        label: `Skill ${i}`,
+                        data: dpsArr.map(data => data.dps[i].avgDps),
                         borderWidth: 1,
                         fill: false
                     });
@@ -61,11 +61,11 @@
 
                 let labels;
                 if (i == 0)
-                    labels = dataArr.map(data => data.def);
+                    labels = dpsArr.map(data => data.def);
                 else if (i == 1)
-                    labels = dataArr.map(data => data.res);
+                    labels = dpsArr.map(data => data.res);
                 else
-                    labels = dataArr.map(data => `${data.def} / ${data.res}`);
+                    labels = dpsArr.map(data => `${data.def} / ${data.res}`);
 
                 if (chartInstances[i]) chartInstances[i].destroy();
                 chartInstances[i] = new Chart(document.getElementById(chartNames[i]), {

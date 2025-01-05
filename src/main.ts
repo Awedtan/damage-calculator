@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
+import * as fs from 'fs';
 import * as T from 'hella-types';
+import path from 'path';
 import getDps from './getDps';
 import { testExpectedValues, writeExpectedValues } from './utils';
 const cors = require('cors');
@@ -21,8 +23,8 @@ async function main() {
     const app = express();
     app.use(cors());
     app.get('/operator/:op', async (request, response) => {
-        const def = Math.min(10000, request.query.def ? parseInt(request.query.def) : 2800);
-        const res = Math.min(500, request.query.res ? parseInt(request.query.res) : 140);
+        const def = Math.min(10000, request.query.def ? parseInt(request.query.def) : 1400);
+        const res = Math.min(500, request.query.res ? parseInt(request.query.res) : 70);
         const ticks = Math.min(50, request.query.ticks ? parseInt(request.query.ticks) : 15) - 1;
         let opReq = null;
         try {
@@ -34,15 +36,17 @@ async function main() {
 
         if (opReq && opReq.ok) {
             const op = (await opReq.json() as any).value as T.Operator;
+            const customFile = path.join(__dirname, '../operators', op.id, 'custom.ts');
+            const custom = fs.existsSync(customFile) ? await import(customFile) : null;
             const defInc = def / ticks;
             const resInc = res / ticks;
             const dpsArr = [[], [], []];
             for (let i = 0; i <= ticks; i++) {
                 const def = defInc * i;
                 const res = resInc * i;
-                dpsArr[0].push({ def: def, res: 0, dps: getDps(op, def, 0) });
-                dpsArr[1].push({ def: 0, res: res, dps: getDps(op, 0, res) });
-                dpsArr[2].push({ def: def, res: res, dps: getDps(op, def, res) });
+                dpsArr[0].push({ def: def, res: 0, dps: getDps(op, custom, def, 0) });
+                dpsArr[1].push({ def: 0, res: res, dps: getDps(op, custom, 0, res) });
+                dpsArr[2].push({ def: def, res: res, dps: getDps(op, custom, def, res) });
             }
             response.status(200).send(dpsArr);
         }

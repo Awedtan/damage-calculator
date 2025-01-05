@@ -1,0 +1,38 @@
+[
+    {
+        "atk": 662,
+        "dmgType": 0,
+        "aspd": 0.769,
+        "hitNum": 2,
+        "spHit": 0.23,
+        "spRate": 0.177,
+        "hitDmg": 662,
+        "dps": 1018.462
+    },
+    {
+        "atk": 662,
+        "dmgType": 0,
+        "aspd": 0.769,
+        "hitNum": 4,
+        "spType": "INCREASE_WHEN_ATTACK",
+        "spHit": 1.23,
+        "spRate": 0.946,
+        "hitDmg": 2250.8,
+        "dps": 6925.538,
+        "uptime": 0.103,
+        "avgDps": 1623.937
+    },
+    {
+        "atk": 662,
+        "dmgType": 0,
+        "aspd": 0.769,
+        "hitNum": 1,
+        "spType": "INCREASE_WHEN_ATTACK",
+        "spHit": 1.23,
+        "spRate": 0.946,
+        "hitDmg": 2979,
+        "dps": 2291.538,
+        "uptime": 0.095,
+        "avgDps": 1138.914
+    }
+]

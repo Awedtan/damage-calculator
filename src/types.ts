@@ -1,3 +1,5 @@
+import * as T from 'hella-types';
+
 export const DMG_PHYSICAL = 0;
 export const DMG_ARTS = 1;
 export const DMG_TRUE = 2;
@@ -41,4 +43,13 @@ export type DamageNumbers = {
     dps?: number
     uptime?: number
     avgDps?: number
+}
+
+export type CustomFunctions = {
+    customArchNumbers?: (op: T.Operator) => StatNumbers
+    customBaseNumbers?: (op: T.Operator) => StatNumbers
+    customTalentNumbers?: (op: T.Operator) => StatNumbers
+    customDownNumbers?: (op: T.Operator, archNumbers: StatNumbers, baseNumbers: StatNumbers, talentNumbers: StatNumbers, def: number, res: number) => DamageNumbers
+    customSkillNumbers?: (skill: T.Skill) => StatNumbers
+    customUpNumbers?: (op: T.Operator, skill: T.Skill, archNumbers: StatNumbers, baseNumbers: StatNumbers, talentNumbers: StatNumbers, skillNumbers: StatNumbers, downNumbers: DamageNumbers, def: number, res: number) => DamageNumbers
 }

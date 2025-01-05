@@ -1,32 +1,49 @@
 import * as T from 'hella-types';
 import { calcArtsDmg, calcPhysDmg, calcTotalAspd, calcTotalAtk, calcTotalSpHit, calcTotalSpRate } from "./calc";
-import { DamageNumbers, DMG_ARTS, DMG_PHYSICAL, DMG_TRUE, PROF_DMG_TYPES, SP_ATTACK, SP_HURT, SP_TIME, StatNumbers } from "./types";
+import { CustomFunctions, DamageNumbers, DMG_ARTS, DMG_PHYSICAL, DMG_TRUE, PROF_DMG_TYPES, SP_ATTACK, SP_HURT, SP_TIME, StatNumbers } from "./types";
 
-export default function getDps(op: T.Operator, def: number, res: number) {
-    const baseNumbers = collectBaseNumbers(op);
-    const talentNumbers = collectTalentNumbers(op);
-    const downNumbers = collectDownNumbers(op, baseNumbers, talentNumbers, def, res);
+export default function getDps(op: T.Operator, custom: CustomFunctions, def: number, res: number) {
+    const numbersArr: DamageNumbers[] = [];
+    const collectFuncs = {
+        archNumbers: custom?.customArchNumbers ?? collectArchNumbers,
+        baseNumbers: custom?.customBaseNumbers ?? collectBaseNumbers,
+        talentNumbers: custom?.customTalentNumbers ?? collectTalentNumbers,
+        downNumbers: custom?.customDownNumbers ?? collectDownNumbers,
+        skillNumbers: custom?.customSkillNumbers ?? collectSkillNumbers,
+        // moduleNumbers: custom?.customModuleNumbers ?? collectModuleNumbers,
+        upNumbers: custom?.customUpNumbers ?? collectUpNumbers
+    }
 
-    const upNumbersArr: DamageNumbers[] = [];
+    const archNumbers = collectFuncs.archNumbers(op);
+    const baseNumbers = collectFuncs.baseNumbers(op);
+    const talentNumbers = collectFuncs.talentNumbers(op);
+    const downNumbers = collectFuncs.downNumbers(op, archNumbers, baseNumbers, talentNumbers, def, res);
+    numbersArr.push(downNumbers);
+
     for (const skill of op.skills) {
-        const skillNumbers = collectSkillNumbers(skill);
-        const upNumbers = collectUpNumbers(op, skill, downNumbers, baseNumbers, talentNumbers, skillNumbers, def, res);
-        upNumbersArr.push(upNumbers);
+        const skillNumbers = collectFuncs.skillNumbers(skill);
+        const upNumbers = collectFuncs.upNumbers(op, skill, archNumbers, baseNumbers, talentNumbers, skillNumbers, downNumbers, def, res);
+        numbersArr.push(upNumbers);
     }
 
     const fieldsToRound = ['atk', 'aspd', 'spRate', 'hitDmg', 'dps', 'uptime', 'avgDps'];
-    for (const field of fieldsToRound)
-        if (downNumbers[field])
-            downNumbers[field] = Math.round(downNumbers[field] * 1e3) / 1e3;
-    for (const upNumbers of upNumbersArr)
+    for (const upNumbers of numbersArr)
         for (const field of fieldsToRound)
             if (upNumbers[field])
                 upNumbers[field] = Math.round(upNumbers[field] * 1e3) / 1e3;
 
-    return { downNumbers, upNumbersArr };
+    return numbersArr;
 }
 
-function collectBaseNumbers(op: T.Operator): StatNumbers {
+export function collectArchNumbers(op: T.Operator): StatNumbers {
+    const archNumbers: StatNumbers = {};
+    if (op.data.subProfessionId === 'sword') {
+        archNumbers.hitNum = 2;
+    }
+    return archNumbers;
+}
+
+export function collectBaseNumbers(op: T.Operator): StatNumbers {
     const baseNumbers: StatNumbers = {};
     const maxStats = op.data.phases[op.data.phases.length - 1].attributesKeyFrames[op.data.phases[op.data.phases.length - 1].attributesKeyFrames.length - 1].data;
     const atk = maxStats.atk;
@@ -47,7 +64,7 @@ function collectBaseNumbers(op: T.Operator): StatNumbers {
     return baseNumbers;
 }
 
-function collectTalentNumbers(op: T.Operator): StatNumbers {
+export function collectTalentNumbers(op: T.Operator): StatNumbers {
     const talentNumbers: StatNumbers = {};
     for (const talent of op.data.talents.map(talent => getBlackboardValues(talent.candidates[talent.candidates.length - 1].blackboard))) {
         const talentProb = talent['prob'] ?? 1;
@@ -61,24 +78,24 @@ function collectTalentNumbers(op: T.Operator): StatNumbers {
     return talentNumbers;
 }
 
-function collectDownNumbers(op: T.Operator, baseNumbers: StatNumbers, talentNumbers: StatNumbers, def: number, res: number): DamageNumbers {
+export function collectDownNumbers(op: T.Operator, archNumbers: StatNumbers, baseNumbers: StatNumbers, talentNumbers: StatNumbers, def: number, res: number): DamageNumbers {
     const downNumbers: DamageNumbers = {};
-    downNumbers.atk = calcTotalAtk([baseNumbers, talentNumbers]);
+    downNumbers.atk = calcTotalAtk([archNumbers, baseNumbers, talentNumbers]);
     downNumbers.dmgType = getDamageType(op);
-    downNumbers.aspd = calcTotalAspd([baseNumbers, talentNumbers]);
-    downNumbers.hitNum = 1;
-    downNumbers.spHit = calcTotalSpHit([baseNumbers, talentNumbers]);
-    downNumbers.spRate = calcTotalSpRate([baseNumbers, talentNumbers]);
+    downNumbers.aspd = calcTotalAspd([archNumbers, baseNumbers, talentNumbers]);
+    downNumbers.hitNum = archNumbers.hitNum ?? baseNumbers.hitNum ?? talentNumbers.hitNum ?? 1;
+    downNumbers.spHit = calcTotalSpHit([archNumbers, baseNumbers, talentNumbers]);
+    downNumbers.spRate = calcTotalSpRate([archNumbers, baseNumbers, talentNumbers]);
     downNumbers.hitDmg = downNumbers.dmgType === DMG_PHYSICAL
-        ? calcPhysDmg([baseNumbers, talentNumbers], def)
+        ? calcPhysDmg([archNumbers, baseNumbers, talentNumbers], def)
         : downNumbers.dmgType === DMG_ARTS
-            ? calcArtsDmg([baseNumbers, talentNumbers], res)
+            ? calcArtsDmg([archNumbers, baseNumbers, talentNumbers], res)
             : 0;
     downNumbers.dps = downNumbers.hitDmg * downNumbers.hitNum * downNumbers.aspd;
     return downNumbers;
 }
 
-function collectSkillNumbers(skill: T.Skill): StatNumbers {
+export function collectSkillNumbers(skill: T.Skill): StatNumbers {
     const skillNumbers: StatNumbers = {};
     const skillBlackboard = getBlackboardValues(skill.levels[skill.levels.length - 1].blackboard);
     skillNumbers.atkPercent = skillBlackboard['atk'] ?? 0;
@@ -89,22 +106,22 @@ function collectSkillNumbers(skill: T.Skill): StatNumbers {
 }
 
 // todo
-function collectModuleNumbers() {
+export function collectModuleNumbers() {
 }
 
-function collectUpNumbers(op: T.Operator, skill: T.Skill, downNumbers: DamageNumbers, baseNumbers: StatNumbers, talentNumbers: StatNumbers, skillNumbers: StatNumbers, def: number, res: number): DamageNumbers {
+export function collectUpNumbers(op: T.Operator, skill: T.Skill, archNumbers: StatNumbers, baseNumbers: StatNumbers, talentNumbers: StatNumbers, skillNumbers: StatNumbers, downNumbers: DamageNumbers, def: number, res: number): DamageNumbers {
     const upNumbers: DamageNumbers = {};
-    upNumbers.atk = calcTotalAtk([baseNumbers, talentNumbers, skillNumbers]);
+    upNumbers.atk = calcTotalAtk([archNumbers, baseNumbers, talentNumbers, skillNumbers]);
     upNumbers.dmgType = getDamageType(op, skill);
-    upNumbers.aspd = calcTotalAspd([baseNumbers, talentNumbers, skillNumbers]);
+    upNumbers.aspd = calcTotalAspd([archNumbers, baseNumbers, talentNumbers, skillNumbers]);
     upNumbers.hitNum = skillNumbers.hitNum;
     upNumbers.spType = getSpType(skill);
-    upNumbers.spHit = calcTotalSpHit([baseNumbers, talentNumbers, skillNumbers], upNumbers.spType);
-    upNumbers.spRate = calcTotalSpRate([baseNumbers, talentNumbers, skillNumbers], upNumbers.spType);
+    upNumbers.spHit = calcTotalSpHit([archNumbers, baseNumbers, talentNumbers, skillNumbers], upNumbers.spType);
+    upNumbers.spRate = calcTotalSpRate([archNumbers, baseNumbers, talentNumbers, skillNumbers], upNumbers.spType);
     upNumbers.hitDmg = upNumbers.dmgType === DMG_PHYSICAL
-        ? calcPhysDmg([baseNumbers, talentNumbers, skillNumbers], def)
+        ? calcPhysDmg([archNumbers, baseNumbers, talentNumbers, skillNumbers], def)
         : upNumbers.dmgType === DMG_ARTS
-            ? calcArtsDmg([baseNumbers, talentNumbers, skillNumbers], res)
+            ? calcArtsDmg([archNumbers, baseNumbers, talentNumbers, skillNumbers], res)
             : 0;
     upNumbers.dps = upNumbers.hitDmg * upNumbers.hitNum * upNumbers.aspd;
 
