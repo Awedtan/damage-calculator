@@ -6,66 +6,23 @@ export default function getDps(op: T.Operator, def: number, res: number) {
     const baseNumbers = collectBaseNumbers(op);
     const talentNumbers = collectTalentNumbers(op);
     const downNumbers = collectDownNumbers(op, baseNumbers, talentNumbers, def, res);
+
     const upNumbersArr: DamageNumbers[] = [];
-
-    for (let i = 0; i < op.skills.length; i++) {
-        const skillNumbers = collectSkillNumbers(op, i);
-        const upNumbers = collectUpNumbers(op, i, baseNumbers, talentNumbers, skillNumbers, def, res);
-
-        const s = op.skills[i].levels[op.skills[i].levels.length - 1];
-        switch (s.spData.spType) {
-            case SP_ATTACK: {
-                if (s.duration && s.duration > 0) {
-                    console.log(`${SP_ATTACK} with duration >0 not implemented`);
-                }
-                else {
-                    upNumbers.uptime = upNumbers.spHit / (1 + s.spData.spCost); // uptime is independent of aspd
-                    upNumbers.avgDps = upNumbers.dps * upNumbers.uptime + downNumbers.dps * (1 - upNumbers.uptime);
-                }
-                break;
-            }
-            case SP_HURT: {
-                if (s.duration && s.duration > 0) {
-                    console.log(`${SP_HURT} with duration >0 not implemented`);
-                }
-                else {
-                    console.log(`${SP_HURT} with duration 0 not implemented`);
-                }
-                break;
-            }
-            case SP_TIME: {
-                if (s.duration && s.duration > 0) {
-                    upNumbers.uptime = s.duration / (s.duration + s.spData.spCost);
-                    upNumbers.avgDps = upNumbers.dps * upNumbers.uptime + downNumbers.dps * (1 - upNumbers.uptime);
-                }
-                else {
-                    // todo: differentiate between fang s1 and eyja s2
-                    upNumbers.uptime = 1 / (1 + s.spData.spCost);
-                    upNumbers.avgDps = upNumbers.dps * upNumbers.uptime + downNumbers.dps * (1 - upNumbers.uptime);
-                }
-                break;
-            }
-            default: {
-                console.log('Unknown spType: ' + op + ' ' + s.spData.spType);
-            }
-        }
+    for (const skill of op.skills) {
+        const skillNumbers = collectSkillNumbers(skill);
+        const upNumbers = collectUpNumbers(op, skill, downNumbers, baseNumbers, talentNumbers, skillNumbers, def, res);
         upNumbersArr.push(upNumbers);
     }
 
-    downNumbers.atk = Math.round(downNumbers.atk * 1e3) / 1e3;
-    downNumbers.aspd = Math.round(downNumbers.aspd * 1e3) / 1e3;
-    downNumbers.spRate = Math.round(downNumbers.spRate * 1e3) / 1e3;
-    downNumbers.hitDmg = Math.round(downNumbers.hitDmg * 1e3) / 1e3;
-    downNumbers.dps = Math.round(downNumbers.dps * 1e3) / 1e3;
-    for (const upNumbers of upNumbersArr) {
-        upNumbers.atk = Math.round(upNumbers.atk * 1e3) / 1e3;
-        upNumbers.aspd = Math.round(upNumbers.aspd * 1e3) / 1e3;
-        upNumbers.spRate = Math.round(upNumbers.spRate * 1e3) / 1e3;
-        upNumbers.hitDmg = Math.round(upNumbers.hitDmg * 1e3) / 1e3;
-        upNumbers.dps = Math.round(upNumbers.dps * 1e3) / 1e3;
-        upNumbers.uptime = Math.round(upNumbers.uptime * 1e3) / 1e3;
-        upNumbers.avgDps = Math.round(upNumbers.avgDps * 1e3) / 1e3;
-    }
+    const fieldsToRound = ['atk', 'aspd', 'spRate', 'hitDmg', 'dps', 'uptime', 'avgDps'];
+    for (const field of fieldsToRound)
+        if (downNumbers[field])
+            downNumbers[field] = Math.round(downNumbers[field] * 1e3) / 1e3;
+    for (const upNumbers of upNumbersArr)
+        for (const field of fieldsToRound)
+            if (upNumbers[field])
+                upNumbers[field] = Math.round(upNumbers[field] * 1e3) / 1e3;
+
     return { downNumbers, upNumbersArr };
 }
 
@@ -121,8 +78,7 @@ function collectDownNumbers(op: T.Operator, baseNumbers: StatNumbers, talentNumb
     return downNumbers;
 }
 
-function collectSkillNumbers(op: T.Operator, i: number): StatNumbers {
-    const skill = op.skills[i];
+function collectSkillNumbers(skill: T.Skill): StatNumbers {
     const skillNumbers: StatNumbers = {};
     const skillBlackboard = getBlackboardValues(skill.levels[skill.levels.length - 1].blackboard);
     skillNumbers.atkPercent = skillBlackboard['atk'] ?? 0;
@@ -136,13 +92,13 @@ function collectSkillNumbers(op: T.Operator, i: number): StatNumbers {
 function collectModuleNumbers() {
 }
 
-function collectUpNumbers(op: T.Operator, i: number, baseNumbers: StatNumbers, talentNumbers: StatNumbers, skillNumbers: StatNumbers, def: number, res: number): DamageNumbers {
+function collectUpNumbers(op: T.Operator, skill: T.Skill, downNumbers: DamageNumbers, baseNumbers: StatNumbers, talentNumbers: StatNumbers, skillNumbers: StatNumbers, def: number, res: number): DamageNumbers {
     const upNumbers: DamageNumbers = {};
     upNumbers.atk = calcTotalAtk([baseNumbers, talentNumbers, skillNumbers]);
-    upNumbers.dmgType = getDamageType(op, op.skills[i]);
+    upNumbers.dmgType = getDamageType(op, skill);
     upNumbers.aspd = calcTotalAspd([baseNumbers, talentNumbers, skillNumbers]);
     upNumbers.hitNum = skillNumbers.hitNum;
-    upNumbers.spType = getSpType(op.skills[i]);
+    upNumbers.spType = getSpType(skill);
     upNumbers.spHit = calcTotalSpHit([baseNumbers, talentNumbers, skillNumbers], upNumbers.spType);
     upNumbers.spRate = calcTotalSpRate([baseNumbers, talentNumbers, skillNumbers], upNumbers.spType);
     upNumbers.hitDmg = upNumbers.dmgType === DMG_PHYSICAL
@@ -151,6 +107,45 @@ function collectUpNumbers(op: T.Operator, i: number, baseNumbers: StatNumbers, t
             ? calcArtsDmg([baseNumbers, talentNumbers, skillNumbers], res)
             : 0;
     upNumbers.dps = upNumbers.hitDmg * upNumbers.hitNum * upNumbers.aspd;
+
+    const s = skill.levels[skill.levels.length - 1];
+    switch (s.spData.spType) {
+        case SP_ATTACK: {
+            if (s.duration && s.duration > 0) {
+                console.log(`${SP_ATTACK} with duration >0 not implemented`);
+            }
+            else {
+                upNumbers.uptime = upNumbers.spHit / (1 + s.spData.spCost); // uptime is independent of aspd
+                upNumbers.avgDps = upNumbers.dps * upNumbers.uptime + downNumbers.dps * (1 - upNumbers.uptime);
+            }
+            break;
+        }
+        case SP_HURT: {
+            if (s.duration && s.duration > 0) {
+                console.log(`${SP_HURT} with duration >0 not implemented`);
+            }
+            else {
+                console.log(`${SP_HURT} with duration 0 not implemented`);
+            }
+            break;
+        }
+        case SP_TIME: {
+            if (s.duration && s.duration > 0) {
+                upNumbers.uptime = s.duration / (s.duration + s.spData.spCost);
+                upNumbers.avgDps = upNumbers.dps * upNumbers.uptime + downNumbers.dps * (1 - upNumbers.uptime);
+            }
+            else {
+                // todo: differentiate between fang s1 and eyja s2
+                upNumbers.uptime = 1 / (1 + s.spData.spCost);
+                upNumbers.avgDps = upNumbers.dps * upNumbers.uptime + downNumbers.dps * (1 - upNumbers.uptime);
+            }
+            break;
+        }
+        default: {
+            console.log('Unknown spType: ' + op + ' ' + s.spData.spType);
+        }
+    }
+
     return upNumbers;
 }
 
@@ -161,7 +156,6 @@ function getBlackboardValues(blackboard: T.Blackboard[]): { [key: string]: numbe
     }
     return blackboardValues;
 }
-
 
 function getDamageType(op: T.Operator, skill?: T.Skill): number {
     if (skill) {
